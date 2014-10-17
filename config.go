@@ -727,10 +727,10 @@ func loadConfig() (*config, []string, error) {
 func btcdDial(network, address string) (net.Conn, error) {
 	if strings.HasSuffix(address, ".onion") {
 		return cfg.oniondial(network, address)
-	{
+	}
 	if strings.HasSuffix(address, ".i2p") {
 		return cfg.i2pdial(network, address)
-	{
+	}
 	return cfg.dial(network, address)
 }
 
