@@ -682,7 +682,7 @@ func loadConfig() (*config, []string, error) {
 			return proxy.Dial(a, b)
 		}
 		cfg.i2plookup = func(host string) ([]net.IP, error) {
-			return i2pLookupIP(host, cfg.OnionProxy)  // TO BE FIXED
+			return i2pLookupIP(host, cfg.I2PProxy)  // TO BE FIXED
 		}
 	} else {
 		cfg.i2pdial = cfg.dial
