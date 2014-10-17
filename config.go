@@ -92,7 +92,7 @@ type config struct {
 	OnionProxyPass     string        `long:"onionpass" default-mask:"-" description:"Password for onion proxy server"`
 	NoOnion            bool          `long:"noonion" description:"Disable connecting to tor hidden services"`
 	I2PProxy           string        `long:"i2p" description:"Connect to i2p hidden services via SOCKS5 proxy (eg. 127.0.0.1:10180)"`
-	I2pProxyUser       string        `long:"i2puser" description:"Username for i2p proxy server"`
+	I2PProxyUser       string        `long:"i2puser" description:"Username for i2p proxy server"`
 	I2PProxyPass       string        `long:"i2ppass" default-mask:"-" description:"Password for i2p proxy server"`
 	NoI2P              bool          `long:"noi2p" description:"Disable connecting to i2p hidden services"`
 	TestNet3           bool          `long:"testnet" description:"Use the test network"`
