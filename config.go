@@ -91,6 +91,10 @@ type config struct {
 	OnionProxyUser     string        `long:"onionuser" description:"Username for onion proxy server"`
 	OnionProxyPass     string        `long:"onionpass" default-mask:"-" description:"Password for onion proxy server"`
 	NoOnion            bool          `long:"noonion" description:"Disable connecting to tor hidden services"`
+	I2PProxy           string        `long:"i2p" description:"Connect to i2p hidden services via SOCKS5 proxy (eg. 127.0.0.1:10180)"`
+	I2pProxyUser       string        `long:"i2puser" description:"Username for i2p proxy server"`
+	I2PProxyPass       string        `long:"i2ppass" default-mask:"-" description:"Password for i2p proxy server"`
+	NoI2P              bool          `long:"noi2p" description:"Disable connecting to i2p hidden services"`
 	TestNet3           bool          `long:"testnet" description:"Use the test network"`
 	RegressionTest     bool          `long:"regtest" description:"Use the regression test network"`
 	SimNet             bool          `long:"simnet" description:"Use the simulation test network"`
@@ -107,8 +111,10 @@ type config struct {
 	BlockMaxSize       uint32        `long:"blockmaxsize" description:"Maximum block size in bytes to be used when creating a block"`
 	BlockPrioritySize  uint32        `long:"blockprioritysize" description:"Size in bytes for high-priority/low-fee transactions when creating a block"`
 	GetWorkKeys        []string      `long:"getworkkey" description:"DEPRECATED -- Use the --miningaddr option instead"`
+	i2plookup          func(string) ([]net.IP, error)
 	onionlookup        func(string) ([]net.IP, error)
 	lookup             func(string) ([]net.IP, error)
+	i2pdial            func(string, string) (net.Conn, error)
 	oniondial          func(string, string) (net.Conn, error)
 	dial               func(string, string) (net.Conn, error)
 	miningAddrs        []btcutil.Address
@@ -666,6 +672,23 @@ func loadConfig() (*config, []string, error) {
 		cfg.onionlookup = cfg.lookup
 	}
 
+	if cfg.I2PProxy != "" {
+		cfg.i2pdial = func(a, b string) (net.Conn, error) {
+			proxy := &socks.Proxy{
+				Addr:     cfg.I2PProxy,
+				Username: cfg.I2PProxyUser,
+				Password: cfg.I2PProxyPass,
+			}
+			return proxy.Dial(a, b)
+		}
+		cfg.i2plookup = func(host string) ([]net.IP, error) {
+			return i2pLookupIP(host, cfg.OnionProxy)  // TO BE FIXED
+		}
+	} else {
+		cfg.i2pdial = cfg.dial
+		cfg.i2plookup = cfg.lookup
+	}
+
 	// Specifying --noonion means the onion address dial and DNS resolution
 	// (lookup) functions result in an error.
 	if cfg.NoOnion {
@@ -674,6 +697,15 @@ func loadConfig() (*config, []string, error) {
 		}
 		cfg.onionlookup = func(a string) ([]net.IP, error) {
 			return nil, errors.New("tor has been disabled")
+		}
+	}
+
+	if cfg.NoI2P {
+		cfg.i2pdial = func(a, b string) (net.Conn, error) {
+			return nil, errors.New("i2p has been disabled")
+		}
+		cfg.i2plookup = func(a string) ([]net.IP, error) {
+			return nil, errors.New("i2p has been disabled")
 		}
 	}
 
@@ -695,7 +727,10 @@ func loadConfig() (*config, []string, error) {
 func btcdDial(network, address string) (net.Conn, error) {
 	if strings.HasSuffix(address, ".onion") {
 		return cfg.oniondial(network, address)
-	}
+
+	if strings.HasSuffix(address, ".i2p") {
+		return cfg.i2pdial(network, address)
+	
 	return cfg.dial(network, address)
 }
 
@@ -710,5 +745,10 @@ func btcdLookup(host string) ([]net.IP, error) {
 	if strings.HasSuffix(host, ".onion") {
 		return cfg.onionlookup(host)
 	}
+
+	if strings.HasSuffix(host, ".i2p") {
+		return cfg.i2plookup(host)
+	}
+
 	return cfg.lookup(host)
 }

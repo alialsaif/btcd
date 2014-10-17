@@ -702,6 +702,14 @@ func (a *AddrManager) HostToNetAddress(host string, port uint16, services btcwir
 		}
 		prefix := []byte{0xfd, 0x87, 0xd8, 0x7e, 0xeb, 0x43}
 		ip = net.IP(append(prefix, data...))
+	} else if (host[len(host)-5:] == ".i2p") {
+		data, err := base32.StdEncoding.DecodeString(
+			strings.ToUpper(host[:len(host)-4]))
+		if err != nil {
+			return nil, err
+		}
+		prefix := []byte{0xfd, 0x87, 0xd8, 0x7e, 0xeb, 0x44}
+		ip = net.IP(append(prefix, data...))	
 	} else if ip = net.ParseIP(host); ip == nil {
 		ips, err := a.lookupFunc(host)
 		if err != nil {
@@ -724,6 +732,12 @@ func ipString(na *btcwire.NetAddress) string {
 		// We know now that na.IP is long enogh.
 		base32 := base32.StdEncoding.EncodeToString(na.IP[6:])
 		return strings.ToLower(base32) + ".onion"
+	}
+
+	if IsI2P(na) {
+		// We know now that na.IP is long enogh.
+		base32 := base32.StdEncoding.EncodeToString(na.IP[6:])
+		return strings.ToLower(base32) + ".i2p"
 	}
 
 	return na.IP.String()
@@ -997,6 +1011,18 @@ func getReachabilityFrom(localAddr, remoteAddr *btcwire.NetAddress) int {
 
 	if IsOnionCatTor(remoteAddr) {
 		if IsOnionCatTor(localAddr) {
+			return Private
+		}
+
+		if IsRoutable(localAddr) && IsIPv4(localAddr) {
+			return Ipv4
+		}
+
+		return Default
+	}
+
+	if IsI2P(remoteAddr) {
+		if IsI2P(localAddr) {
 			return Private
 		}
 

@@ -123,6 +123,10 @@ func torLookupIP(host, proxy string) ([]net.IP, error) {
 	return addr, nil
 }
 
+func i2pLookupIP(host, proxy string) ([]net.IP, error) {
+	return torLookupIP(host, proxy)
+}
+
 // dnsDiscover looks up the list of peers resolved by DNS for all hosts in
 // seeders. If proxy is not "" then it is used as a tor proxy for the
 // resolution.

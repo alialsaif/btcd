@@ -68,6 +68,7 @@ var (
 	// In summary the format is:
 	// { magic 6 bytes, 10 bytes base32 decode of key hash }
 	onionCatNet = ipNet("fd87:d87e:eb43::", 48, 128)
+	I2PNet = ipNet("fd87:d87e:eb44::", 48, 128)
 
 	// zero4Net defines the IPv4 address block for address staring with 0
 	// (0.0.0.0/8).
@@ -100,6 +101,10 @@ func IsLocal(na *btcwire.NetAddress) bool {
 // IPv6 range.
 func IsOnionCatTor(na *btcwire.NetAddress) bool {
 	return onionCatNet.Contains(na.IP)
+}
+
+func IsI2P(na *btcwire.NetAddress) bool {
+	return I2PNet.Contains(na.IP)
 }
 
 // IsRFC1918 returns whether or not the passed address is part of the IPv4
@@ -185,7 +190,8 @@ func IsValid(na *btcwire.NetAddress) bool {
 func IsRoutable(na *btcwire.NetAddress) bool {
 	return IsValid(na) && !(IsRFC1918(na) || IsRFC3927(na) ||
 		IsRFC4862(na) || IsRFC3849(na) || IsRFC4843(na) ||
-		IsLocal(na) || (IsRFC4193(na) && !IsOnionCatTor(na)))
+		IsLocal(na) || 
+		(IsRFC4193(na) && !IsOnionCatTor(na) && !IsI2P(na)))
 }
 
 // GroupKey returns a string representing the network group an address is part
@@ -226,6 +232,10 @@ func GroupKey(na *btcwire.NetAddress) string {
 	if IsOnionCatTor(na) {
 		// group is keyed off the first 4 bits of the actual onion key.
 		return fmt.Sprintf("tor:%d", na.IP[6]&((1<<4)-1))
+	}
+	if IsI2P(na) {
+		// group is keyed off the first 4 bits of the actual I2P key.
+		return fmt.Sprintf("i2p:%d", na.IP[6]&((1<<4)-1))
 	}
 
 	// OK, so now we know ourselves to be a IPv6 address.
